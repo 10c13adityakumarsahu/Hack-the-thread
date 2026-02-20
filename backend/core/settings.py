@@ -120,6 +120,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+WHITENOISE_MANIFEST_STRICT = False
+
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -133,6 +135,7 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host != '*']
-if '*' in ALLOWED_HOSTS:
-    CSRF_TRUSTED_ORIGINS.append("http://localhost:3000") # Common dev origin
+
+# Production CSRF settings
+CSRF_TRUSTED_ORIGINS = ["https://hack-the-thread.onrender.com"]
+ALLOWED_HOSTS = ['hack-the-thread.onrender.com', 'localhost', '127.0.0.1']
