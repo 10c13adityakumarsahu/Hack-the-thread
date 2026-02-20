@@ -1,0 +1,9 @@
+django>=5.0
+djangorestframework
+django-cors-headers
+google-generativeai
+python-dotenv
+requests
+beautifulsoup4
+gunicorn
+whitenoise
