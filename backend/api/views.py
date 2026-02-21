@@ -123,31 +123,33 @@ def whatsapp_webhook(request):
 
             text_body = message.get('text', {}).get('body', '').strip()
             
+            # 1a. Immediate Acknowledgement (User requested this happen first)
+            ack_text = f"Received: \"{text_body}\"\n\nProcessing... ⏳"
+            send_whatsapp_message(from_number, ack_text)
+
             # Simple URL extraction
             url_pattern = r'https?://[^\s]+'
             urls = re.findall(url_pattern, text_body)
             
             if not urls:
-                send_whatsapp_message(from_number, "Hi! Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you! 🚀")
+                send_whatsapp_message(from_number, "I'm ready! Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you! 🚀")
                 return Response(status=status.HTTP_200_OK)
             
             url = urls[0]
             
-            # --- Duplicate Protection & Immediate Feedback ---
+            # --- Duplicate Protection ---
             
             # 1. Check if URL already exists
             if SavedItem.objects.filter(url=url).exists():
-                send_whatsapp_message(from_number, "This link is already in your collection! 📂")
+                send_whatsapp_message(from_number, "By the way, this link is already in your collection! 📂")
                 return Response(status=status.HTTP_200_OK)
 
-            # 2. Send "Processing" message immediately
-            send_whatsapp_message(from_number, "Processing your link... ⏳")
-            
             # 3. Launch background thread for heavy processing
+            # We already sent the "Processing" message above
             thread = threading.Thread(target=process_webhook_in_background, args=(url, from_number))
             thread.start()
             
-            # Return 200 OK immediately to avoid timeouts
+            # Return 200 OK immediately
             return Response(status=status.HTTP_200_OK)
             
         except Exception as e:
