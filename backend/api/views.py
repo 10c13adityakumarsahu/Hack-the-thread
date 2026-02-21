@@ -11,6 +11,8 @@ import requests
 import re
 import os
 import json
+import threading
+from django.db import close_old_connections
 
 class SavedItemViewSet(viewsets.ModelViewSet):
     queryset = SavedItem.objects.all().order_by('-created_at')
@@ -39,6 +41,42 @@ def send_whatsapp_message(to, text):
         print(f"Error sending WhatsApp message: {e}")
         return None
 
+def process_webhook_in_background(url, from_number):
+    """Heavy lifting (Scraping + AI + DB) in a background thread."""
+    try:
+        print(f"Background: Processing URL {url}")
+        item_type = get_url_type(url)
+        
+        print("Background: Scraping metadata...")
+        scraped_data = scrape_metadata(url)
+        
+        print("Background: Processing with AI...")
+        ai_data = process_with_ai(url, scraped_data)
+        
+        # Save to DB
+        print("Background: Saving to database...")
+        item = SavedItem.objects.create(
+            url=url,
+            item_type=item_type,
+            title=scraped_data.get('title'),
+            caption=scraped_data.get('caption'),
+            summary=ai_data.get('summary'),
+            category=ai_data.get('category'),
+            hashtags=ai_data.get('hashtags')
+        )
+        
+        reply_text = f"Got it! Saved to your '{item.category}' bucket."
+        print(f"Background: Sending reply to {from_number}")
+        send_whatsapp_message(from_number, reply_text)
+        
+    except Exception as e:
+        print(f"Background process error: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        # Crucial for long-running threads in Django
+        close_old_connections()
+
 @csrf_exempt
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
@@ -51,24 +89,16 @@ def whatsapp_webhook(request):
         token = request.query_params.get('hub.verify_token')
         challenge = request.query_params.get('hub.challenge')
         
-        print(f"Mode: {mode}")
-        print(f"Token: {token}")
-        print(f"Challenge: {challenge}")
-
         if mode == 'subscribe' and token == verify_token:
-            print("Verification successful!")
-            # Challenge must be returned as a raw string
             from django.http import HttpResponse
             return HttpResponse(challenge, content_type="text/plain")
         
-        print("Verification failed!")
         return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
 
     # 2. Handle Incoming Message (POST)
     if request.method == 'POST':
         print("--- Incoming Webhook (POST) ---")
         data = request.data
-        print(f"Payload: {json.dumps(data, indent=2)}")
         
         try:
             entries = data.get('entry', [])
@@ -87,13 +117,11 @@ def whatsapp_webhook(request):
 
             message = messages[0]
             from_number = message.get('from')
-            message_id = message.get('id') # wamid
             
             if message.get('type') != 'text':
                 return Response(status=status.HTTP_200_OK)
 
             text_body = message.get('text', {}).get('body', '').strip()
-            print(f"Message from {from_number}: {text_body}")
             
             # Simple URL extraction
             url_pattern = r'https?://[^\s]+'
@@ -115,38 +143,15 @@ def whatsapp_webhook(request):
             # 2. Send "Processing" message immediately
             send_whatsapp_message(from_number, "Processing your link... ⏳")
             
-            # --- Background processing simulator (blocking but with timeouts) ---
-            print(f"Processing URL: {url}")
-            item_type = get_url_type(url)
+            # 3. Launch background thread for heavy processing
+            thread = threading.Thread(target=process_webhook_in_background, args=(url, from_number))
+            thread.start()
             
-            print("Scraping metadata...")
-            scraped_data = scrape_metadata(url)
-            
-            print("Processing with AI...")
-            ai_data = process_with_ai(url, scraped_data)
-            
-            # Save to DB
-            print("Saving to database...")
-            item = SavedItem.objects.create(
-                url=url,
-                item_type=item_type,
-                title=scraped_data.get('title'),
-                caption=scraped_data.get('caption'),
-                summary=ai_data.get('summary'),
-                category=ai_data.get('category'),
-                hashtags=ai_data.get('hashtags')
-            )
-            
-            reply_text = f"Got it! Saved to your '{item.category}' bucket."
-            print(f"Sending reply to {from_number}")
-            send_whatsapp_message(from_number, reply_text)
-            
+            # Return 200 OK immediately to avoid timeouts
             return Response(status=status.HTTP_200_OK)
             
         except Exception as e:
             print(f"Webhook error: {e}")
-            import traceback
-            traceback.print_exc()
-            return Response(status=status.HTTP_200_OK) # Always return 200
+            return Response(status=status.HTTP_200_OK)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
