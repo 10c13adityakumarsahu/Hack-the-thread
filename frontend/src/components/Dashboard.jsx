@@ -10,6 +10,9 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('All');
+
+    const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
     const fetchItems = async () => {
         try {
@@ -37,51 +40,63 @@ const Dashboard = () => {
         }
     };
 
-    const filteredItems = items.filter(item =>
-        item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.summary?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.hashtags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredItems = items.filter(item => {
+        const matchesSearch =
+            item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.summary?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.hashtags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+    });
 
     return (
         <div className="dashboard-wrapper">
             <header className="dashboard-header">
-                <motion.h1
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="dashboard-title"
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="header-content"
                 >
-                    Social Saver <Sparkles className="inline-block" size={32} style={{ verticalAlign: 'middle', marginLeft: '10px' }} />
-                </motion.h1>
-                <p className="dashboard-subtitle">Your personal AI-powered knowledge base from social links.</p>
+                    <h1 className="dashboard-title premium-gradient-text">
+                        Social Saver <Sparkles className="inline-block" size={32} style={{ color: '#8b5cf6', marginLeft: '12px' }} />
+                    </h1>
+                    <p className="dashboard-subtitle">Curation of your digital brain. Powered by AI.</p>
+                </motion.div>
 
-                <div className="search-container">
-                    <Search className="search-icon" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search your saves... (e.g. Pasta, Fitness)"
-                        className="search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div className="controls-row">
+                    <div className="search-container glass">
+                        <Search className="search-icon" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Find inspiration..."
+                            className="search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <button
+                        onClick={fetchItems}
+                        className="refresh-btn glass glass-hover"
+                    >
+                        <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+                    </button>
                 </div>
 
-                <button
-                    onClick={fetchItems}
-                    className="glass"
-                    style={{
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        margin: '0 auto 2rem'
-                    }}
-                >
-                    <RefreshCw size={14} className={refreshing ? 'animate-spin mr-2' : 'mr-2'} style={{ marginRight: '8px' }} />
-                    Refresh
-                </button>
+                <div className="category-filter">
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`category-pill ${selectedCategory === cat ? 'active' : 'glass glass-hover'}`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
             </header>
 
             {loading ? (
