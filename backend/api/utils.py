@@ -19,85 +19,116 @@ def get_url_type(url):
         return 'x'
     elif 'youtube.com' in domain or 'youtu.be' in domain:
         return 'youtube'
+    elif 'tiktok.com' in domain:
+        return 'tiktok'
     else:
-        return 'blog'
+        return 'web'
+
+def scrape_social_metadata(url, platform):
+    """Specialized scraping for social media to avoid login walls."""
+    headers = {
+        'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+    }
+    
+    target_url = url
+    # Use bot-friendly proxies for X/Twitter
+    if platform == 'x':
+        target_url = url.replace('twitter.com', 'vxtwitter.com').replace('x.com', 'vxtwitter.com')
+    
+    try:
+        print(f"Bypassing login wall for {platform}: {target_url}")
+        response = requests.get(target_url, headers=headers, timeout=15)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Extract OpenGraph and Twitter Meta Tags (usually allowed through login walls)
+            meta_data = {
+                'title': soup.find('meta', property='og:title') or soup.find('meta', name='twitter:title'),
+                'description': soup.find('meta', property='og:description') or soup.find('meta', name='twitter:description') or soup.find('meta', property='description'),
+                'site_name': soup.find('meta', property='og:site_name'),
+                'image': soup.find('meta', property='og:image'),
+            }
+            
+            # Clean up the extracted tags
+            info = {k: v['content'] if v and v.has_attr('content') else None for k, v in meta_data.items()}
+            
+            if info['title'] or info['description']:
+                return {
+                    'title': info['title'] or f"{platform.capitalize()} Content",
+                    'caption': info['description'] or "",
+                    'body_text': f"Site: {info['site_name']}\nDescription: {info['description']}",
+                    'status': 'ok'
+                }
+    except Exception as e:
+        print(f"Social bypass failed: {e}")
+    
+    return None
 
 def scrape_metadata(url):
-    """Scrape metadata using Jina Reader API (handles JS rendering)."""
-    try:
-        print(f"Scraping using Jina Reader for: {url}")
-        jina_url = f"https://r.jina.ai/{url}"
-        headers = {
-            'X-Return-Format': 'markdown'
-        }
-        # Using a longer timeout as rendering can take time
-        response = requests.get(jina_url, headers=headers, timeout=20)
-        
-        if response.status_code == 200:
-            content = response.text
-            # Basic extraction from the Jina markdown/text
-            lines = content.split('\n')
-            title = lines[0].strip('# ') if lines else url
-            
-            return {
-                'title': title,
-                'caption': content[:700], # Slightly more for context
-                'body_text': content[:4000], # More context for better AI titles
-                'html': ''
-            }
-        else:
-            print(f"Jina error {response.status_code}, falling back...")
-            raise Exception("Jina failed")
+    """Robust multi-layered scraping: Specialized Social -> Jina Reader -> Standard."""
+    platform = get_url_type(url)
+    
+    # Layer 1: Specialized social bypass (Meta-tag crawler spoofing)
+    if platform in ['instagram', 'x', 'tiktok']:
+        social_data = scrape_social_metadata(url, platform)
+        if social_data:
+            return social_data
 
-    except Exception as e:
-        print(f"Jina scrape error for {url}: {e}")
-        # Standard fallback
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(url, headers=headers, timeout=10)
-            soup = BeautifulSoup(response.text, 'html.parser')
+    # Layer 2: Jina Reader (Good for general blogs/articles)
+    try:
+        print(f"Layer 2: Scraping using Jina for: {url}")
+        jina_url = f"https://r.jina.ai/{url}"
+        response = requests.get(jina_url, headers={'X-Return-Format': 'markdown'}, timeout=15)
+        
+        if response.status_code == 200 and "Log In" not in response.text[:500]:
+            content = response.text
             return {
-                'title': soup.title.string if soup.title else url,
-                'caption': '',
-                'body_text': soup.get_text()[:1500],
-                'html': response.text[:1000]
+                'title': content.split('\n')[0].strip('# ') if content else url,
+                'caption': content[:1000],
+                'body_text': content[:4000],
+                'status': 'ok'
             }
-        except:
-            return {'title': 'Link', 'caption': '', 'body_text': '', 'html': ''}
+    except Exception as e:
+        print(f"Jina Layer failed: {e}")
+
+    # Layer 3: Final Fallback (URL Info ONLY)
+    return {
+        'title': f"Shared {platform}",
+        'caption': f"A link from {platform}",
+        'body_text': f"Source URL: {url}. Content restricted by login wall.",
+        'status': 'restricted'
+    }
 
 def process_with_ai(url, scraped_data):
+    platform = get_url_type(url)
+    
     prompt = f"""
-    Analyze the following social media/web content and extract key metadata.
-    
+    You are a professional metadata extractor.
     URL: {url}
-    SCRAEPD TITLE: {scraped_data.get('title')}
+    PLATFORM: {platform}
+    SCRAPED TITLE: {scraped_data.get('title')}
     SCRAPED CAPTION: {scraped_data.get('caption')}
-    BODY CONTEXT: {scraped_data.get('body_text')}
+    CONTENT: {scraped_data.get('body_text')}
     
-    TASKS:
-    1.  **A Better Title**: Generate a descriptive, high-quality title based on the content. The title should NEVER be just "Instagram", "YouTube", "X", or URL domains. If it's a video, describe the main action or subject.
-    2.  **Category**: Categorize into one of: Technology, Design, Coding, Fitness, Food, Travel, Finance, News, Entertainment, or Other.
-    3.  **Summary**: One concise sentence summarizing the main point. For X.com posts, summarize the specific point or news being shared.
-    4.  **Hashtags**: List 3-5 relevant hashtags.
+    TASK:
+    Generate high-quality metadata for this saved link.
+    If the content seems restricted (title is generic), use the URL to infer context.
+    - Title: Descriptive (e.g., '@user's Fitness Reel' or 'Article about AI in 2024')
+    - Category: Choose from [Technology, Design, Coding, Fitness, Food, Travel, Finance, News, Entertainment, Other]
+    - Summary: 1 clean sentence.
+    - Hashtags: 3-5 relevant tags.
     
-    **CRITICAL**: 
-    - Do NOT use any emojis or emoticons in any part of the response.
-    - The "title" field MUST be a meaningful title, not a platform name.
-    
-    RETURN ONLY A JSON OBJECT with these keys:
-    "title": "...",
-    "category": "...",
-    "summary": "...",
-    "hashtags": ["tag1", "tag2", ...]
+    NO EMOJIS.
+    RETURN ONLY JSON.
     """
     
     try:
         response = client.models.generate_content(
             model=MODEL_NAME, 
             contents=prompt,
-            config={
-                'response_mime_type': 'application/json'
-            }
+            config={'response_mime_type': 'application/json'}
         )
         
         import json
@@ -106,14 +137,14 @@ def process_with_ai(url, scraped_data):
         return {
             'title': ai_output.get('title', scraped_data.get('title')),
             'category': ai_output.get('category', 'Other'),
-            'summary': ai_output.get('summary', 'No summary available.'),
-            'hashtags': ai_output.get('hashtags', [])
+            'summary': ai_output.get('summary', 'Saved social media content.'),
+            'hashtags': ai_output.get('hashtags', [platform])
         }
     except Exception as e:
-        print(f"AI processing error for {url}: {e}")
+        print(f"AI error: {e}")
         return {
             'title': scraped_data.get('title'),
             'category': "Other",
-            'summary': scraped_data.get('caption')[:100] if scraped_data.get('caption') else "Saved link.",
-            'hashtags': []
+            'summary': "Saved from web.",
+            'hashtags': [platform]
         }
