@@ -11,6 +11,7 @@ const Dashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [sortBy, setSortBy] = useState('Newest');
 
     const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
@@ -40,17 +41,24 @@ const Dashboard = () => {
         }
     };
 
-    const filteredItems = items.filter(item => {
-        const matchesSearch =
-            item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.summary?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.hashtags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filteredItems = items
+        .filter(item => {
+            const matchesSearch =
+                item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.summary?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.hashtags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+            const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
 
-        return matchesSearch && matchesCategory;
-    });
+            return matchesSearch && matchesCategory;
+        })
+        .sort((a, b) => {
+            if (sortBy === 'Newest') return new Date(b.created_at) - new Date(a.created_at);
+            if (sortBy === 'Oldest') return new Date(a.created_at) - new Date(b.created_at);
+            if (sortBy === 'Alpha') return a.title.localeCompare(b.title);
+            return 0;
+        });
 
     return (
         <div className="dashboard-wrapper">
@@ -78,9 +86,22 @@ const Dashboard = () => {
                         />
                     </div>
 
+                    <div className="sort-container glass">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="sort-select"
+                        >
+                            <option value="Newest">Newest First</option>
+                            <option value="Oldest">Oldest First</option>
+                            <option value="Alpha">A-Z</option>
+                        </select>
+                    </div>
+
                     <button
                         onClick={fetchItems}
                         className="refresh-btn glass glass-hover"
+                        title="Refresh feed"
                     >
                         <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
                     </button>
