@@ -23,6 +23,10 @@ def send_whatsapp_message(to, text):
     access_token = os.environ.get("WHATSAPP_ACCESS_TOKEN")
     phone_number_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
     
+    if not access_token or not phone_number_id:
+        print("ERROR: Missing WhatsApp API credentials in environment variables!")
+        return None
+
     url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -34,11 +38,20 @@ def send_whatsapp_message(to, text):
         "type": "text",
         "text": {"body": text},
     }
+    
+    print(f"Sending message to {to}...")
     try:
         response = requests.post(url, headers=headers, json=data, timeout=10)
-        return response.json()
+        resp_json = response.json()
+        print(f"Meta API Response Status: {response.status_code}")
+        print(f"Meta API Response Body: {json.dumps(resp_json, indent=2)}")
+        
+        if response.status_code != 200:
+            print(f"FAILED to send message to {to}. Status: {response.status_code}")
+        
+        return resp_json
     except Exception as e:
-        print(f"Error sending WhatsApp message: {e}")
+        print(f"Critical Error sending WhatsApp message: {e}")
         return None
 
 def process_webhook_in_background(url, from_number):
@@ -97,8 +110,9 @@ def whatsapp_webhook(request):
 
     # 2. Handle Incoming Message (POST)
     if request.method == 'POST':
-        print("--- Incoming Webhook (POST) ---")
         data = request.data
+        print("--- Incoming Webhook (POST) ---")
+        print(f"Payload from Meta: {json.dumps(data, indent=2)}")
         
         try:
             entries = data.get('entry', [])
