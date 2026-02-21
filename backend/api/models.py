@@ -8,7 +8,7 @@ class SavedItem(models.Model):
         ('other', 'Other'),
     ]
 
-    url = models.URLField(max_length=500)
+    url = models.URLField(max_length=500, unique=True)
     item_type = models.CharField(max_length=20, choices=URL_TYPE_CHOICES, default='other')
     title = models.CharField(max_length=255, blank=True, null=True)
     caption = models.TextField(blank=True, null=True)

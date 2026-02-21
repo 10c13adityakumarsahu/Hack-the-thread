@@ -33,7 +33,7 @@ def send_whatsapp_message(to, text):
         "text": {"body": text},
     }
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=10)
         return response.json()
     except Exception as e:
         print(f"Error sending WhatsApp message: {e}")
@@ -71,30 +71,25 @@ def whatsapp_webhook(request):
         print(f"Payload: {json.dumps(data, indent=2)}")
         
         try:
-            # Extracting information from Meta's nested JSON
             entries = data.get('entry', [])
             if not entries:
-                print("No entries in payload")
                 return Response(status=status.HTTP_200_OK)
 
             changes = entries[0].get('changes', [])
             if not changes:
-                print("No changes in entry")
                 return Response(status=status.HTTP_200_OK)
 
             value = changes[0].get('value', {})
             messages = value.get('messages', [])
             
             if not messages:
-                print("No messages in value (likely status update)")
                 return Response(status=status.HTTP_200_OK)
 
             message = messages[0]
             from_number = message.get('from')
+            message_id = message.get('id') # wamid
             
-            # Check if it's a text message
             if message.get('type') != 'text':
-                print(f"Received non-text message type: {message.get('type')}")
                 return Response(status=status.HTTP_200_OK)
 
             text_body = message.get('text', {}).get('body', '').strip()
@@ -105,17 +100,28 @@ def whatsapp_webhook(request):
             urls = re.findall(url_pattern, text_body)
             
             if not urls:
-                print("No URLs found, sending help message")
                 send_whatsapp_message(from_number, "Hi! Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you! 🚀")
                 return Response(status=status.HTTP_200_OK)
             
             url = urls[0]
+            
+            # --- Duplicate Protection & Immediate Feedback ---
+            
+            # 1. Check if URL already exists
+            if SavedItem.objects.filter(url=url).exists():
+                send_whatsapp_message(from_number, "This link is already in your collection! 📂")
+                return Response(status=status.HTTP_200_OK)
+
+            # 2. Send "Processing" message immediately
+            send_whatsapp_message(from_number, "Processing your link... ⏳")
+            
+            # --- Background processing simulator (blocking but with timeouts) ---
             print(f"Processing URL: {url}")
             item_type = get_url_type(url)
             
-            # Processing
             print("Scraping metadata...")
             scraped_data = scrape_metadata(url)
+            
             print("Processing with AI...")
             ai_data = process_with_ai(url, scraped_data)
             
@@ -141,6 +147,6 @@ def whatsapp_webhook(request):
             print(f"Webhook error: {e}")
             import traceback
             traceback.print_exc()
-            return Response(status=status.HTTP_200_OK) # Always return 200 to Meta to avoid retries
+            return Response(status=status.HTTP_200_OK) # Always return 200
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
