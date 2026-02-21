@@ -78,7 +78,7 @@ def process_webhook_in_background(url, from_number):
             hashtags=ai_data.get('hashtags')
         )
         
-        reply_text = f"Got it! Saved to your '{item.category}' bucket.\n\nView your collection here: https://hack-the-thread.onrender.com/ 🚀"
+        reply_text = f"Got it! Saved to your '{item.category}' bucket.\n\nView your collection here: https://hack-the-thread.onrender.com/"
         print(f"Background: Sending reply to {from_number}")
         send_whatsapp_message(from_number, reply_text)
         
@@ -138,7 +138,7 @@ def whatsapp_webhook(request):
             text_body = message.get('text', {}).get('body', '').strip()
             
             # 1a. Immediate Acknowledgement (User requested this happen first)
-            ack_text = f"Received: \"{text_body}\"\n\nProcessing... ⏳"
+            ack_text = f"Received: \"{text_body}\"\n\nProcessing..."
             send_whatsapp_message(from_number, ack_text)
 
             # Simple URL extraction
@@ -146,7 +146,7 @@ def whatsapp_webhook(request):
             urls = re.findall(url_pattern, text_body)
             
             if not urls:
-                send_whatsapp_message(from_number, "I'm ready! Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you! 🚀")
+                send_whatsapp_message(from_number, "I'm ready. Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you.")
                 return Response(status=status.HTTP_200_OK)
             
             url = urls[0]
@@ -155,7 +155,7 @@ def whatsapp_webhook(request):
             
             # 1. Check if URL already exists
             if SavedItem.objects.filter(url=url).exists():
-                send_whatsapp_message(from_number, "By the way, this link is already in your collection! 📂")
+                send_whatsapp_message(from_number, "This link is already in your collection.")
                 return Response(status=status.HTTP_200_OK)
 
             # 3. Launch background thread for heavy processing

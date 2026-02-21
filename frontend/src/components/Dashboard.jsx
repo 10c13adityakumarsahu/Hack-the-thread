@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getItems, deleteItem } from '../services/api';
 import Card from './Card';
-import { Search, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Search, Loader2, RefreshCw, Menu, X, Filter, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Dashboard.css';
 
@@ -12,6 +12,7 @@ const Dashboard = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState('Newest');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
 
@@ -61,92 +62,100 @@ const Dashboard = () => {
         });
 
     return (
-        <div className="dashboard-wrapper">
-            <header className="dashboard-header">
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="header-content"
-                >
-                    <h1 className="dashboard-title premium-gradient-text">
-                        Social Saver <Sparkles className="inline-block" size={32} style={{ color: '#8b5cf6', marginLeft: '12px' }} />
-                    </h1>
-                    <p className="dashboard-subtitle">Curation of your digital brain. Powered by AI.</p>
-                </motion.div>
+        <div className="main-layout">
+            <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+                <div className="sidebar-header">
+                    <h2 className="brand-name">Social Saver</h2>
+                    <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>
+                        <X size={20} />
+                    </button>
+                </div>
 
-                <div className="controls-row">
-                    <div className="search-container glass">
-                        <Search className="search-icon" size={20} />
+                <div className="sidebar-section">
+                    <h3 className="section-label">Categories</h3>
+                    <div className="category-list">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`sidebar-item ${selectedCategory === cat ? 'active' : ''}`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="sidebar-section">
+                    <h3 className="section-label">Sort By</h3>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="sidebar-select"
+                    >
+                        <option value="Newest">Newest First</option>
+                        <option value="Oldest">Oldest First</option>
+                        <option value="Alpha">A-Z Order</option>
+                    </select>
+                </div>
+
+                <div className="sidebar-footer">
+                    <button onClick={fetchItems} className="refresh-sidebar-btn">
+                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                        Sync Data
+                    </button>
+                </div>
+            </aside>
+
+            <main className="content-area">
+                <header className="content-header">
+                    {!sidebarOpen && (
+                        <button className="menu-btn" onClick={() => setSidebarOpen(true)}>
+                            <Menu size={24} />
+                        </button>
+                    )}
+
+                    <div className="search-bar">
+                        <Search size={18} className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Find inspiration..."
-                            className="search-input"
+                            placeholder="Search collection..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                </header>
 
-                    <div className="sort-container glass">
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="sort-select"
-                        >
-                            <option value="Newest">Newest First</option>
-                            <option value="Oldest">Oldest First</option>
-                            <option value="Alpha">A-Z</option>
-                        </select>
-                    </div>
-
-                    <button
-                        onClick={fetchItems}
-                        className="refresh-btn glass glass-hover"
-                        title="Refresh feed"
-                    >
-                        <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-
-                <div className="category-filter">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`category-pill ${selectedCategory === cat ? 'active' : 'glass glass-hover'}`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
-            </header>
-
-            {loading ? (
-                <div className="loading-container">
-                    <Loader2 className="animate-spin mx-auto mb-4" size={48} />
-                    <p>Loading your knowledge base...</p>
-                </div>
-            ) : (
-                <AnimatePresence mode="popLayout">
-                    {filteredItems.length > 0 ? (
-                        <motion.div
-                            layout
-                            className="items-grid"
-                        >
-                            {filteredItems.map(item => (
-                                <Card key={item.id} item={item} onDelete={handleDelete} />
-                            ))}
-                        </motion.div>
+                <div className="content-body">
+                    {loading ? (
+                        <div className="loader-box">
+                            <Loader2 className="animate-spin" size={32} />
+                            <p>Loading collection</p>
+                        </div>
                     ) : (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="empty-container"
-                        >
-                            <p className="text-xl">No saves found. Send a link to your WhatsApp bot!</p>
-                        </motion.div>
+                        <AnimatePresence mode="popLayout">
+                            {filteredItems.length > 0 ? (
+                                <motion.div
+                                    layout
+                                    className="items-grid"
+                                >
+                                    {filteredItems.map(item => (
+                                        <Card key={item.id} item={item} onDelete={handleDelete} />
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="empty-state"
+                                >
+                                    <p>No items found in this section.</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     )}
-                </AnimatePresence>
-            )}
+                </div>
+            </main>
         </div>
     );
 };

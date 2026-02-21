@@ -78,6 +78,8 @@ def process_with_ai(url, scraped_data):
     3.  **Summary**: One concise sentence summarizing the main point.
     4.  **Hashtags**: List 3-5 relevant hashtags.
     
+    **CRITICAL**: Do NOT use any emojis or emoticons in any part of the response.
+    
     RETURN ONLY A JSON OBJECT with these keys:
     "title": "...",
     "category": "...",
