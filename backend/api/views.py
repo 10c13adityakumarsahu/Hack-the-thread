@@ -10,10 +10,7 @@ from django.conf import settings
 import requests
 import re
 import os
-import logging
 import json
-
-logger = logging.getLogger(__name__)
 
 class SavedItemViewSet(viewsets.ModelViewSet):
     queryset = SavedItem.objects.all().order_by('-created_at')
@@ -48,47 +45,48 @@ def send_whatsapp_message(to, text):
 def whatsapp_webhook(request):
     # 1. Webhook Verification (GET)
     if request.method == 'GET':
-        logger.info("Webhook verification request received")
+        print("--- Webhook Verification (GET) ---")
         verify_token = os.environ.get("WHATSAPP_VERIFY_TOKEN")
         mode = request.query_params.get('hub.mode')
         token = request.query_params.get('hub.verify_token')
         challenge = request.query_params.get('hub.challenge')
         
-        logger.debug(f"Mode: {mode}, Token: {token}, Challenge: {challenge}")
+        print(f"Mode: {mode}")
+        print(f"Token: {token}")
+        print(f"Challenge: {challenge}")
 
         if mode == 'subscribe' and token == verify_token:
-            logger.info("Webhook verified successfully")
-            # Return challenge as raw text/plain
+            print("Verification successful!")
+            # Challenge must be returned as a raw string
             from django.http import HttpResponse
             return HttpResponse(challenge, content_type="text/plain")
         
-        logger.warning("Webhook verification failed: Token mismatch or invalid mode")
+        print("Verification failed!")
         return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
 
     # 2. Handle Incoming Message (POST)
     if request.method == 'POST':
-        logger.info("Incoming WhatsApp message received")
+        print("--- Incoming Webhook (POST) ---")
         data = request.data
-        logger.debug(f"Payload: {json.dumps(data, indent=2)}")
+        print(f"Payload: {json.dumps(data, indent=2)}")
         
         try:
             # Extracting information from Meta's nested JSON
             entries = data.get('entry', [])
             if not entries:
-                logger.info("No entries found in payload")
+                print("No entries in payload")
                 return Response(status=status.HTTP_200_OK)
 
             changes = entries[0].get('changes', [])
             if not changes:
-                logger.info("No changes found in entry")
+                print("No changes in entry")
                 return Response(status=status.HTTP_200_OK)
 
             value = changes[0].get('value', {})
             messages = value.get('messages', [])
             
             if not messages:
-                # This could be a status update (sent/delivered/read)
-                logger.info("No messages found in value (likely a status update)")
+                print("No messages in value (likely status update)")
                 return Response(status=status.HTTP_200_OK)
 
             message = messages[0]
@@ -96,33 +94,33 @@ def whatsapp_webhook(request):
             
             # Check if it's a text message
             if message.get('type') != 'text':
-                logger.info(f"Received non-text message of type: {message.get('type')}")
+                print(f"Received non-text message type: {message.get('type')}")
                 return Response(status=status.HTTP_200_OK)
 
             text_body = message.get('text', {}).get('body', '').strip()
-            logger.info(f"Message from {from_number}: {text_body}")
+            print(f"Message from {from_number}: {text_body}")
             
             # Simple URL extraction
             url_pattern = r'https?://[^\s]+'
             urls = re.findall(url_pattern, text_body)
             
             if not urls:
-                logger.info("No URLs found in message, sending help message")
+                print("No URLs found, sending help message")
                 send_whatsapp_message(from_number, "Hi! Send me a link from Instagram, Twitter, or a Blog, and I'll save it for you! 🚀")
                 return Response(status=status.HTTP_200_OK)
             
             url = urls[0]
-            logger.info(f"Processing URL: {url}")
+            print(f"Processing URL: {url}")
             item_type = get_url_type(url)
             
             # Processing
-            logger.info(f"Scraping metadata for {url}")
+            print("Scraping metadata...")
             scraped_data = scrape_metadata(url)
-            logger.info(f"Processing with AI for {url}")
+            print("Processing with AI...")
             ai_data = process_with_ai(url, scraped_data)
             
             # Save to DB
-            logger.info(f"Saving item to database")
+            print("Saving to database...")
             item = SavedItem.objects.create(
                 url=url,
                 item_type=item_type,
@@ -133,14 +131,16 @@ def whatsapp_webhook(request):
                 hashtags=ai_data.get('hashtags')
             )
             
-            reply_text = f"✅ Got it! Saved to your '{item.category}' bucket.\n\nSummary: {item.summary}"
-            logger.info(f"Sending reply to {from_number}")
+            reply_text = f"Got it! Saved to your '{item.category}' bucket."
+            print(f"Sending reply to {from_number}")
             send_whatsapp_message(from_number, reply_text)
             
             return Response(status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Webhook error: {str(e)}", exc_info=True)
+            print(f"Webhook error: {e}")
+            import traceback
+            traceback.print_exc()
             return Response(status=status.HTTP_200_OK) # Always return 200 to Meta to avoid retries
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

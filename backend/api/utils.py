@@ -1,15 +1,14 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from google import genai
 from urllib.parse import urlparse
 import re
 
 # Configure Gemini
-# In a real app, use environment variables: os.environ.get("GEMINI_API_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+client = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_NAME = "gemini-2.0-flash"
 
 def get_url_type(url):
     domain = urlparse(url).netloc
@@ -64,7 +63,7 @@ def process_with_ai(url, scraped_data):
     """
     
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
         text = response.text
         
         category = re.search(r"Category: (.*)", text)
