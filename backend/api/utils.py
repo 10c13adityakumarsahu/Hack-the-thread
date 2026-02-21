@@ -9,14 +9,16 @@ import time
 # Configure Gemini
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "gemini-3-flash-preview"
+MODEL_NAME = "gemini-2.5-flash-preview"
 
 def get_url_type(url):
     domain = urlparse(url).netloc.lower()
     if 'instagram.com' in domain:
         return 'instagram'
     elif 'twitter.com' in domain or 'x.com' in domain:
-        return 'twitter'
+        return 'x'
+    elif 'youtube.com' in domain or 'youtu.be' in domain:
+        return 'youtube'
     else:
         return 'blog'
 
@@ -39,9 +41,9 @@ def scrape_metadata(url):
             
             return {
                 'title': title,
-                'caption': content[:500], # First 500 chars as caption hint
-                'body_text': content[:3000], # More context for Gemini
-                'html': '' # Not needed with Jina's clean text
+                'caption': content[:700], # Slightly more for context
+                'body_text': content[:4000], # More context for better AI titles
+                'html': ''
             }
         else:
             print(f"Jina error {response.status_code}, falling back...")
@@ -57,7 +59,7 @@ def scrape_metadata(url):
             return {
                 'title': soup.title.string if soup.title else url,
                 'caption': '',
-                'body_text': soup.get_text()[:1000],
+                'body_text': soup.get_text()[:1500],
                 'html': response.text[:1000]
             }
         except:
@@ -73,12 +75,14 @@ def process_with_ai(url, scraped_data):
     BODY CONTEXT: {scraped_data.get('body_text')}
     
     TASKS:
-    1.  **A Better Title**: If the scraped title is generic (like "Instagram" or "Twitter"), generate a descriptive title based on the content. If it's a video/reel, describe what happens if possible from the text.
+    1.  **A Better Title**: Generate a descriptive, high-quality title based on the content. The title should NEVER be just "Instagram", "YouTube", "X", or URL domains. If it's a video, describe the main action or subject.
     2.  **Category**: Categorize into one of: Technology, Design, Coding, Fitness, Food, Travel, Finance, News, Entertainment, or Other.
-    3.  **Summary**: One concise sentence summarizing the main point.
+    3.  **Summary**: One concise sentence summarizing the main point. For X.com posts, summarize the specific point or news being shared.
     4.  **Hashtags**: List 3-5 relevant hashtags.
     
-    **CRITICAL**: Do NOT use any emojis or emoticons in any part of the response.
+    **CRITICAL**: 
+    - Do NOT use any emojis or emoticons in any part of the response.
+    - The "title" field MUST be a meaningful title, not a platform name.
     
     RETURN ONLY A JSON OBJECT with these keys:
     "title": "...",

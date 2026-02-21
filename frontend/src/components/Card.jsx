@@ -8,12 +8,15 @@ const Card = ({ item, onDelete }) => {
     const embedUrl = useMemo(() => {
         const url = item.url;
         if (url.includes('instagram.com/reel/') || url.includes('instagram.com/p/')) {
-            // Instagram embed URL format
             const cleanUrl = url.split('?')[0];
             return `${cleanUrl}embed`;
         }
         if (url.includes('youtube.com/watch?v=')) {
             const videoId = url.split('v=')[1]?.split('&')[0];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+        if (url.includes('youtube.com/shorts/')) {
+            const videoId = url.split('shorts/')[1]?.split('?')[0];
             return `https://www.youtube.com/embed/${videoId}`;
         }
         if (url.includes('youtu.be/')) {
@@ -30,12 +33,13 @@ const Card = ({ item, onDelete }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
             whileHover={{ y: -5 }}
-            className="glass card-container"
+            className="card-container"
         >
             <div className="card-header">
-                <span className="category-badge">
-                    {item.category || 'General'}
-                </span>
+                <div className="card-badges">
+                    <span className="platform-badge">{item.item_type}</span>
+                    <span className="category-badge">{item.category || 'General'}</span>
+                </div>
                 <button
                     onClick={() => onDelete(item.id)}
                     className="delete-btn"
@@ -58,7 +62,7 @@ const Card = ({ item, onDelete }) => {
                         style={{ borderRadius: '12px' }}
                     ></iframe>
                 </div>
-            ) : item.item_type === 'instagram' || item.item_type === 'twitter' ? (
+            ) : (item.item_type === 'instagram' || item.item_type === 'x') ? (
                 <div className="player-placeholder">
                     <Play className="player-icon" size={40} />
                 </div>

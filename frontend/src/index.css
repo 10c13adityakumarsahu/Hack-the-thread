@@ -3,12 +3,12 @@
 :root {
   --primary: #4f46e5;
   --secondary: #6366f1;
-  --bg-dark: #0f172a;
-  --bg-sidebar: #1e293b;
-  --bg-card: #1e293b;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --border-color: rgba(255, 255, 255, 0.1);
+  --bg-dark: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
   --sidebar-width: 260px;
 }
 
@@ -22,7 +22,7 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
-  background: radial-gradient(circle at 10% 10%, #1e293b 0%, #0f172a 100%);
+  background: radial-gradient(circle at 10% 10%, #f1f5f9 0%, #f8fafc 100%);
   background-attachment: fixed;
   min-height: 100vh;
   overflow-x: hidden;

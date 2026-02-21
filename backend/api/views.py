@@ -71,7 +71,7 @@ def process_webhook_in_background(url, from_number):
         item = SavedItem.objects.create(
             url=url,
             item_type=item_type,
-            title=scraped_data.get('title'),
+            title=ai_data.get('title') or scraped_data.get('title'),
             caption=scraped_data.get('caption'),
             summary=ai_data.get('summary'),
             category=ai_data.get('category'),

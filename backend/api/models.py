@@ -3,7 +3,8 @@ from django.db import models
 class SavedItem(models.Model):
     URL_TYPE_CHOICES = [
         ('instagram', 'Instagram'),
-        ('twitter', 'Twitter'),
+        ('x', 'X'),
+        ('youtube', 'YouTube'),
         ('blog', 'Blog/Article'),
         ('other', 'Other'),
     ]
