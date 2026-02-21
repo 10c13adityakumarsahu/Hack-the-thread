@@ -12,9 +12,22 @@ const Dashboard = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState('Newest');
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     const categories = ['All', ...new Set(items.map(item => item.category).filter(Boolean))];
+
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth <= 768;
+            setIsMobile(mobile);
+            if (!mobile) setSidebarOpen(true);
+            else setSidebarOpen(false);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const fetchItems = async () => {
         try {
@@ -42,6 +55,13 @@ const Dashboard = () => {
         }
     };
 
+    const handleCategorySelect = (cat) => {
+        setSelectedCategory(cat);
+        if (isMobile) {
+            setSidebarOpen(false);
+        }
+    };
+
     const filteredItems = items
         .filter(item => {
             const matchesSearch =
@@ -63,6 +83,18 @@ const Dashboard = () => {
 
     return (
         <div className="main-layout">
+            <AnimatePresence>
+                {isMobile && sidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSidebarOpen(false)}
+                        className="sidebar-backdrop"
+                    />
+                )}
+            </AnimatePresence>
+
             <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                 <div className="sidebar-header">
                     <h2 className="brand-name">Social Saver</h2>
@@ -77,7 +109,7 @@ const Dashboard = () => {
                         {categories.map(cat => (
                             <button
                                 key={cat}
-                                onClick={() => setSelectedCategory(cat)}
+                                onClick={() => handleCategorySelect(cat)}
                                 className={`sidebar-item ${selectedCategory === cat ? 'active' : ''}`}
                             >
                                 {cat}

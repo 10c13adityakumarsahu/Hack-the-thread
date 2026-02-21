@@ -78,7 +78,7 @@ def process_webhook_in_background(url, from_number):
             hashtags=ai_data.get('hashtags')
         )
         
-        reply_text = f"Got it! Saved to your '{item.category}' bucket.\n\nView your collection here: https://hack-the-thread.onrender.com/"
+        reply_text = f"Got it! Saved to your '{item.category}' bucket.\n\nView your collection here: https://hack-the-thread.pages.dev/"
         print(f"Background: Sending reply to {from_number}")
         send_whatsapp_message(from_number, reply_text)
         
