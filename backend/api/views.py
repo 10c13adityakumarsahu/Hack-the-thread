@@ -21,7 +21,7 @@ def send_whatsapp_message(to, text):
     access_token = os.environ.get("WHATSAPP_ACCESS_TOKEN")
     phone_number_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
     
-    url = f"https://graph.facebook.com/v21.0/{phone_number_id}/messages"
+    url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
