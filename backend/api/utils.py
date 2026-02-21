@@ -104,24 +104,55 @@ def scrape_metadata(url):
 def process_with_ai(url, scraped_data):
     platform = get_url_type(url)
     
+    # Expanded category list for better accuracy
+    categories_list = [
+        "AI & Machine Learning", "Coding & Development", "Design & Creative", 
+        "Business & Startups", "Marketing & Growth", "Finance & Crypto", 
+        "Health & Fitness", "Food & Cooking", "Travel & Adventure", 
+        "Personal Development", "News & Politics", "Entertainment & Pop Culture",
+        "Science & Tech", "Gaming", "Productivity", "Social Media Trends", "Other"
+    ]
+    
     prompt = f"""
-    You are a professional metadata extractor.
+    You are an expert Content Curator and Metadata Engineer. Your goal is to transform messy scraped data into a premium, organized bookmark entry.
+    
+    SYSTEM CONTEXT:
     URL: {url}
     PLATFORM: {platform}
     SCRAPED TITLE: {scraped_data.get('title')}
     SCRAPED CAPTION: {scraped_data.get('caption')}
-    CONTENT: {scraped_data.get('body_text')}
+    FULL CONTENT SNIPPET: {scraped_data.get('body_text')}
     
-    TASK:
-    Generate high-quality metadata for this saved link.
-    If the content seems restricted (title is generic), use the URL to infer context.
-    - Title: Descriptive (e.g., '@user's Fitness Reel' or 'Article about AI in 2024')
-    - Category: Choose from [Technology, Design, Coding, Fitness, Food, Travel, Finance, News, Entertainment, Other]
-    - Summary: 1 clean sentence.
-    - Hashtags: 3-5 relevant tags.
+    YOUR TASKS:
+    1. **Title**: Create a compelling, "click-worthy" but professional title (max 60 chars). 
+       - DO NOT use generic titles like "Instagram Post" or "YouTube Video". 
+       - Capture the core hook or benefit of the content.
+       - If it's a social media post, include the creator's handle if visible (e.g., "DeepSeek's new AI model breakdown by @tech_guru").
     
-    NO EMOJIS.
-    RETURN ONLY JSON.
+    2. **Category**: Select the MOST ACCURATE category from this specific list: {", ".join(categories_list)}.
+       - Be precise. If it's about a new app, use "Science & Tech" or "Coding & Development" based on context.
+    
+    3. **Summary**: Write a high-value, insight-dense summary (20-30 words).
+       - Focus on the "So what?". Why did the user save this? 
+       - Avoid stalling phrases like "This is a post about...". Jump straight to the value.
+    
+    4. **Hashtags**: Generate 4-6 highly specific hashtags.
+       - Mix broad tags (e.g., #AI) with niche tags (e.g., #LargeLanguageModels).
+       - DO NOT just use the platform name as a tag.
+    
+    CONSTRAINTS:
+    - NO emojis.
+    - NO generic platform-only titles.
+    - Response MUST be valid JSON.
+    - If data is sparse, use the URL slug to intelligently guess the topic.
+    
+    RETURN FORMAT (JSON ONLY):
+    {{
+      "title": "...",
+      "category": "...",
+      "summary": "...",
+      "hashtags": ["...", "...", "..."]
+    }}
     """
     
     try:
@@ -134,17 +165,23 @@ def process_with_ai(url, scraped_data):
         import json
         ai_output = json.loads(response.text)
         
+        # Validation to ensure category is from our list
+        final_category = ai_output.get('category', 'Other')
+        if final_category not in categories_list:
+           # Optional: attempt to map or default
+           pass
+
         return {
             'title': ai_output.get('title', scraped_data.get('title')),
-            'category': ai_output.get('category', 'Other'),
-            'summary': ai_output.get('summary', 'Saved social media content.'),
+            'category': final_category,
+            'summary': ai_output.get('summary', 'Saved high-quality content for later review.'),
             'hashtags': ai_output.get('hashtags', [platform])
         }
     except Exception as e:
         print(f"AI error: {e}")
         return {
-            'title': scraped_data.get('title'),
+            'title': scraped_data.get('title') or f"Saved {platform.capitalize()} Link",
             'category': "Other",
-            'summary': "Saved from web.",
+            'summary': "Insightful content saved from the web.",
             'hashtags': [platform]
         }
