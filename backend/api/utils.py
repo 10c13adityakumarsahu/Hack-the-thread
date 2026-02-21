@@ -9,8 +9,7 @@ import time
 # Configure Gemini - Using verified models
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
-# Use a stable, verified model
-MODEL_NAME = "gemini-2.0-flash"
+MODEL_NAME = "gemini-2.5-flash"
 
 def get_url_type(url):
     domain = urlparse(url).netloc.lower()
@@ -65,41 +64,49 @@ def scrape_social_metadata(url, platform):
 def scrape_metadata(url):
     """Robust multi-layered scraping. Always returns a dict for the LLM to process."""
     platform = get_url_type(url)
+    print(f"\n--- SCRAPING START: {url} ---")
     
     # Layer 1: Social Bypass
     if platform in ['instagram', 'x', 'tiktok']:
         social_data = scrape_social_metadata(url, platform)
         if social_data:
+            print(f"Layer 1 (Social) Success: {social_data['title']}")
             return social_data
 
     # Layer 2: Jina Reader
     try:
-        print(f"Layer 2: Jina scrape for: {url}")
         jina_url = f"https://r.jina.ai/{url}"
+        print(f"Layer 2 attempting Jina: {jina_url}")
         response = requests.get(jina_url, headers={'X-Return-Format': 'markdown'}, timeout=12)
         
         if response.status_code == 200 and "Log In" not in response.text[:400]:
             content = response.text
-            return {
+            data = {
                 'title': content.split('\n')[0].strip('# ') if content else url,
                 'caption': content[:800],
                 'body_text': content[:3000],
                 'status': 'ok'
             }
-    except Exception:
-        pass
+            print(f"Layer 2 (Jina) Success: {data['title']}")
+            return data
+    except Exception as e:
+        print(f"Layer 2 Error: {e}")
 
-    # Layer 3: Fallback (Minimal data, but LLM will still use it)
-    return {
+    # Layer 3: Fallback
+    fallback_data = {
         'title': f"Saved {platform.capitalize()} Link",
         'caption': "",
         'body_text': f"URL: {url}",
         'status': 'restricted'
     }
+    print("Layer 3: Falling back to restricted mode")
+    return fallback_data
 
 def process_with_ai(url, scraped_data):
     """Generates high-quality metadata using LLM. Always called regardless of scrape result."""
     platform = get_url_type(url)
+    print(f"AI Input Data: {scraped_data}")
+    
     categories_list = [
         "AI & Machine Learning", "Coding & Development", "Design & Creative", 
         "Business & Startups", "Marketing & Growth", "Finance & Crypto", 
@@ -107,9 +114,6 @@ def process_with_ai(url, scraped_data):
         "Personal Development", "News & Politics", "Entertainment & Pop Culture",
         "Science & Tech", "Gaming", "Productivity", "Social Media Trends", "Other"
     ]
-    
-    # Check if scraping actually gave us content
-    is_restricted = scraped_data.get('status') == 'restricted'
     
     prompt = f"""
     You are an expert Content Curator. Transform the following data into a premium entry.
@@ -125,7 +129,16 @@ def process_with_ai(url, scraped_data):
     3. **Summary**: Insightful summary (max 30 words). If you can't see the content, mention it's a save from {platform} and infer its likely topic from the URL.
     4. **Hashtags**: 3-5 niche tags.
     
-    JSON ONLY. NO EMOJIS.
+    **OUTPUT REQUIREMENT**:
+    You MUST return a valid JSON object. DO NOT include any explanatory text, markdown formatting blocks, or emojis.
+    
+    Example Output:
+    {{
+      "title": "Title Here",
+      "category": "Science & Tech",
+      "summary": "Summary here",
+      "hashtags": ["tag1", "tag2"]
+    }}
     """
     
     import json
@@ -135,6 +148,7 @@ def process_with_ai(url, scraped_data):
             contents=prompt,
             config={'response_mime_type': 'application/json'}
         )
+        print(f"Raw AI Response: {response.text}")
         ai_output = json.loads(response.text)
             
         return {
