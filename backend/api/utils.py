@@ -5,7 +5,6 @@ from google import genai
 from urllib.parse import urlparse
 import re
 import time
-from playwright.sync_api import sync_playwright
 
 # Configure Gemini
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
@@ -22,55 +21,35 @@ def get_url_type(url):
         return 'blog'
 
 def scrape_metadata(url):
-    """Scrape metadata using Playwright for JS-heavy sites."""
+    """Scrape metadata using Jina Reader API (handles JS rendering)."""
     try:
-        with sync_playwright() as p:
-            # Launch browser in headless mode
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-            )
-            page = context.new_page()
-            
-            # Navigate to URL
-            print(f"Playwright: Navigating to {url}")
-            page.goto(url, wait_until="networkidle", timeout=30000)
-            
-            # Wait a bit for dynamic content
-            page.wait_for_timeout(2000)
-            
-            # Extract content
-            html = page.content()
-            title = page.title()
-            
-            # Specific handling for social media titles/captions
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            og_title = soup.find('meta', property='og:title')
-            og_desc = soup.find('meta', property='og:description')
-            
-            scraped_title = og_title['content'] if og_title else title
-            scraped_caption = og_desc['content'] if og_desc else ""
-            
-            # For Instagram/Twitter, sometimes the title is just "Instagram" or "X"
-            # We want more context from the body
-            body_text = ""
-            if soup.body:
-                for script in soup(["script", "style"]):
-                    script.decompose()
-                body_text = soup.body.get_text(separator=' ', strip=True)[:2000]
-            
-            browser.close()
+        print(f"Scraping using Jina Reader for: {url}")
+        jina_url = f"https://r.jina.ai/{url}"
+        headers = {
+            'X-Return-Format': 'markdown'
+        }
+        # Using a longer timeout as rendering can take time
+        response = requests.get(jina_url, headers=headers, timeout=20)
+        
+        if response.status_code == 200:
+            content = response.text
+            # Basic extraction from the Jina markdown/text
+            lines = content.split('\n')
+            title = lines[0].strip('# ') if lines else url
             
             return {
-                'title': scraped_title.strip(),
-                'caption': scraped_caption.strip(),
-                'body_text': body_text.strip(),
-                'html': html[:1000]
+                'title': title,
+                'caption': content[:500], # First 500 chars as caption hint
+                'body_text': content[:3000], # More context for Gemini
+                'html': '' # Not needed with Jina's clean text
             }
+        else:
+            print(f"Jina error {response.status_code}, falling back...")
+            raise Exception("Jina failed")
+
     except Exception as e:
-        print(f"Playwright scrape error for {url}: {e}")
-        # Fallback to requests if Playwright fails
+        print(f"Jina scrape error for {url}: {e}")
+        # Standard fallback
         try:
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(url, headers=headers, timeout=10)
