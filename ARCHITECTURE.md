@@ -1,6 +1,6 @@
 # Social Saver Bot - Architecture
 
-## 🚀 How it Works
+##  How it Works
 
 1.  **WhatsApp Link**: User sends an Instagram, Twitter, or Blog URL to the WhatsApp Bot (Meta Cloud API).
 2.  **Django Webhook**: The Django backend receives the link via the `/api/webhook/whatsapp/` endpoint.
@@ -19,7 +19,7 @@
 -   **AI**: Google Gemini Pro (via `google-generativeai`)
 -   **Bot**: Meta WhatsApp Cloud API
 
-## 📡 Pipeline Diagram
+##  Pipeline Diagram
 ```text
 [ WhatsApp ] ----> [ Meta Cloud API ] ----> [ Django Webhook ]
                                                     |
