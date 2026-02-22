@@ -26,10 +26,8 @@ def ping_server():
         url += '/'
     
     # Construct a URL that definitely hits the Django app
-    # Changed from 'api/' to '' to hit the root or whatever is configured
-    # Actually, based on URLs, 'api/' should work if it's the backend.
-    # But let's just hit the base URL to be safe, any activity counts.
-    target_url = url
+    # Targeting 'api/items/' specifically as requested
+    target_url = f"{url}api/items/"
 
     try:
         # usage of timeout is good practice
