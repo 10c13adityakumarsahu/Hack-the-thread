@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'api',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -138,5 +138,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Production CSRF settings
-CSRF_TRUSTED_ORIGINS = ["https://hack-the-thread.onrender.com"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://hack-the-thread.onrender.com",
+    "https://hack-the-thread.pages.dev"
+]
 ALLOWED_HOSTS = ['hack-the-thread.onrender.com', 'localhost', '127.0.0.1']
