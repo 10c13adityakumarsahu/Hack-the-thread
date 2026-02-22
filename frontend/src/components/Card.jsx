@@ -4,27 +4,18 @@ import { ExternalLink, Tag, Clock, Trash2, Play } from 'lucide-react';
 import moment from 'moment';
 import './Card.css';
 
-const Card = ({ item, onDelete }) => {
-    const embedUrl = useMemo(() => {
-        const url = item.url;
-        if (url.includes('instagram.com/reel/') || url.includes('instagram.com/p/')) {
-            const cleanUrl = url.split('?')[0];
-            return `${cleanUrl}embed`;
+const Card = ({ item, onDelete, onClick }) => {
+    const isVideo = ['youtube', 'instagram', 'x'].includes(item.item_type);
+
+    const getThumbnail = () => {
+        if (item.item_type === 'youtube') {
+            const videoId = item.url.split('v=')[1]?.split('&')[0] || item.url.split('shorts/')[1]?.split('?')[0] || item.url.split('youtu.be/')[1];
+            if (videoId) return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
         }
-        if (url.includes('youtube.com/watch?v=')) {
-            const videoId = url.split('v=')[1]?.split('&')[0];
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
-        if (url.includes('youtube.com/shorts/')) {
-            const videoId = url.split('shorts/')[1]?.split('?')[0];
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
-        if (url.includes('youtu.be/')) {
-            const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
-        return null;
-    }, [item.url]);
+        return null; // Fallback to icon
+    };
+
+    const thumbnail = getThumbnail();
 
     return (
         <motion.div
@@ -32,16 +23,21 @@ const Card = ({ item, onDelete }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ y: -5 }}
-            className="card-container"
+            whileHover={{ y: -8, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
+            className={`card-container ${!item.is_seen ? 'is-new' : ''}`}
+            onClick={onClick}
         >
             <div className="card-header">
                 <div className="card-badges">
+                    {!item.is_seen && <span className="new-badge">New</span>}
                     <span className="platform-badge">{item.item_type}</span>
                     <span className="category-badge">{item.category || 'General'}</span>
                 </div>
                 <button
-                    onClick={() => onDelete(item.id)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item.id);
+                    }}
                     className="delete-btn"
                     title="Delete item"
                 >
@@ -49,53 +45,55 @@ const Card = ({ item, onDelete }) => {
                 </button>
             </div>
 
-            {embedUrl ? (
-                <div className="player-placeholder">
-                    <iframe
-                        src={embedUrl}
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        scrolling="no"
-                        allowTransparency="true"
-                        allow="encrypted-media"
-                        style={{ borderRadius: '12px' }}
-                    ></iframe>
-                </div>
-            ) : (item.item_type === 'instagram' || item.item_type === 'x') ? (
-                <div className="player-placeholder">
-                    <Play className="player-icon" size={40} />
-                </div>
-            ) : null}
+            <div className="card-preview">
+                {thumbnail ? (
+                    <img src={thumbnail} alt={item.title} className="preview-img" />
+                ) : (
+                    <div className="preview-placeholder">
+                        <Play className="play-icon" size={40} />
+                    </div>
+                )}
+                {isVideo && (
+                    <div className="play-overlay">
+                        <Play size={48} fill="white" />
+                    </div>
+                )}
+            </div>
 
-            <div style={{ flex: 1 }}>
+            <div className="card-content">
                 <h3 className="card-title">{item.title || 'Untitled Save'}</h3>
                 <p className="card-summary">
                     {item.summary || item.caption || 'No description available.'}
                 </p>
-            </div>
 
-            <div className="tag-list">
-                {item.hashtags?.map((tag, i) => (
-                    <span key={i} className="tag-item">
-                        <Tag size={10} style={{ marginRight: '6px' }} /> {tag.replace('#', '')}
-                    </span>
-                ))}
+                <div className="tag-list">
+                    {item.hashtags?.slice(0, 3).map((tag, i) => (
+                        <span key={i} className="tag-item">
+                            #{tag.replace('#', '')}
+                        </span>
+                    ))}
+                    {item.hashtags?.length > 3 && (
+                        <span className="tag-more">+{item.hashtags.length - 3}</span>
+                    )}
+                </div>
             </div>
 
             <div className="card-footer">
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Clock size={14} style={{ marginRight: '6px' }} />
-                    {moment(item.created_at).fromNow()}
+                <div className="footer-meta">
+                    <Clock size={14} />
+                    <span>{moment(item.created_at).fromNow()}</span>
                 </div>
-                <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="footer-link"
-                >
-                    Source <ExternalLink size={14} style={{ marginLeft: '6px' }} />
-                </a>
+                <div className="footer-actions">
+                    <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="source-link"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        Source <ExternalLink size={14} />
+                    </a>
+                </div>
             </div>
         </motion.div>
     );

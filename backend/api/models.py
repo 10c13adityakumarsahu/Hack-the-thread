@@ -17,6 +17,7 @@ class SavedItem(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)  # AI generated
     hashtags = models.JSONField(default=list, blank=True)
     media_url = models.URLField(max_length=500, blank=True, null=True)
+    is_seen = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -1,89 +1,155 @@
 .card-container {
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
     display: flex;
     flex-direction: column;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%;
-    padding: 1.5rem;
-    gap: 1.25rem;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    cursor: pointer;
 }
 
-.card-container::before {
-    content: '';
+.card-container.is-new {
+    border-color: #3b82f6;
+    background: #fdfefe;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: var(--primary);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.card-container:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.card-container:hover::before {
-    opacity: 1;
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    z-index: 10;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), transparent);
 }
 
 .card-badges {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
+}
+
+.new-badge {
+    background: #3b82f6;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
 }
 
 .platform-badge {
-    padding: 0.25rem 0.75rem;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    background: rgba(241, 245, 249, 0.9);
     color: #475569;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    border-radius: 9999px;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    backdrop-filter: blur(4px);
 }
 
 .category-badge {
-    padding: 0.25rem 0.75rem;
-    background: rgba(79, 70, 229, 0.1);
-    border: 1px solid rgba(79, 70, 229, 0.2);
-    color: #4f46e5;
-    font-size: 0.65rem;
+    background: rgba(224, 242, 254, 0.9);
+    color: #0284c7;
+    font-size: 0.7rem;
     font-weight: 700;
-    border-radius: 9999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
 }
 
 .delete-btn {
-    background: #fee2e2;
-    color: #ef4444;
-    padding: 0.5rem;
-    border-radius: 10px;
-    opacity: 0.6;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.8);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
 }
 
 .delete-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.card-preview {
+    width: 100%;
+    height: 180px;
+    background: #f1f5f9;
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.card-container:hover .preview-img {
+    transform: scale(1.05);
+}
+
+.preview-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: all 0.2s;
+}
+
+.card-container:hover .play-overlay {
+    background: rgba(59, 130, 246, 0.4);
     opacity: 1;
-    background: #fecaca;
+}
+
+.card-content {
+    padding: 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: -10px;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    position: relative;
+    z-index: 5;
 }
 
 .card-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
-    line-height: 1.4;
     color: #0f172a;
+    margin-bottom: 0.5rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -92,75 +158,66 @@
 }
 
 .card-summary {
+    font-size: 0.9rem;
     color: #64748b;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-    font-weight: 400;
-}
-
-.player-placeholder {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #f1f5f9;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    border: 1px solid var(--border-color);
-    position: relative;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.player-icon {
-    color: var(--primary);
-    opacity: 0.5;
 }
 
 .tag-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
+    gap: 0.4rem;
+    margin-top: auto;
 }
 
 .tag-item {
-    font-size: 0.7rem;
-    color: #64748b;
-    background: #f8fafc;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #3b82f6;
+    background: #eff6ff;
     padding: 0.2rem 0.6rem;
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    border: 1px solid #e2e8f0;
 }
 
-.tag-item:hover {
-    color: var(--primary);
-    border-color: var(--primary);
+.tag-more {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
 }
 
 .card-footer {
-    margin-top: auto;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.75rem;
-    color: #94a3b8;
+    background: #fff;
 }
 
-.footer-link {
+.footer-meta {
     display: flex;
     align-items: center;
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: color 0.2s ease;
+    gap: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
-.footer-link:hover {
-    color: var(--secondary);
+.source-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.source-link:hover {
+    text-decoration: underline;
 }
