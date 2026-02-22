@@ -1,4 +1,6 @@
-# 🚀 Social Saver Bot: Your Personal Knowledge Base
+# Social Saver Bot: Your Personal Knowledge Base
+
+<a href="https://hack-the-thread.pages.dev/">**Social Saver Bot Website live (hosted on Cloudflare Pages)**</a>
 
 **Turning Fleeting Social Links into Searchable Wisdom.**
 
@@ -6,7 +8,7 @@ Social Saver is a WhatsApp-powered bot that captures Instagram Reels, Twitter th
 
 ---
 
-## 🌊 The Exact Data Flow
+##  The Exact Data Flow
 
 1.  **Input (WhatsApp)**: You send an Instagram Reel, Post, or Blog URL to your dedicated WhatsApp number (configured via Meta WhatsApp Cloud API).
 2.  **Reception (Django)**: Meta sends a webhook notification to `backend/api/views.py:whatsapp_webhook`.
@@ -14,9 +16,9 @@ Social Saver is a WhatsApp-powered bot that captures Instagram Reels, Twitter th
     *   **Url Extraction**: The backend identifies the link type (Instagram, Twitter, or Blog).
     *   **Scraping**: `BeautifulSoup` (in `utils.py`) extracts the page title and the original caption/description.
     *   **AI Analysis**: The data is sent to **Google Gemini 1.5 Flash**. The AI:
-        *   🏷️ **Categorizes**: Tags it as "Fitness", "Coding", "UI Design", etc.
-        *   📝 **Summarizes**: Distills the content into a single punchy sentence.
-        *   #️⃣ **Hashtags**: Extracts or generates relevant tags.
+        *    **Categorizes**: Tags it as "Fitness", "Coding", "UI Design", etc.
+        *    **Summarizes**: Distills the content into a single punchy sentence.
+        *    **Hashtags**: Extracts or generates relevant tags.
 4.  **Storage**: The processed information is stored in a **SQLite database**.
 5.  **Confirmation**: The bot sends a WhatsApp message back to you: *"Got it! Saved to your 'Design' bucket. Summary: [AI Summary]"*.
 6.  **Visualization (React)**:
@@ -48,7 +50,7 @@ Social Saver is a WhatsApp-powered bot that captures Instagram Reels, Twitter th
 
 ---
 
-## 🛠️ Project Structure
+## Project Structure
 
 ```text
 ├── backend/                # Django REST API
@@ -65,7 +67,7 @@ Social Saver is a WhatsApp-powered bot that captures Instagram Reels, Twitter th
 
 ---
 
-## 🚀 Setup & Execution
+## Setup & Execution
 
 ### 1. Backend (Django)
 ```bash
@@ -85,7 +87,7 @@ npm run dev
 
 ---
 
-## 🔥 Hackathon "Wow" Factors
+##  Hackathon "Wow" Factors
 -   **Gemini AI Integration**: Goes beyond simple bookmarking; it actually *understands* the content you save.
 -   **Meta Cloud API**: Uses the official WhatsApp infrastructure for maximum reliability.
 -   **Premium Aesthetics**: Uses a sleek dark-mode design with glassmorphism, blur effects, and smooth `framer-motion` animations.
@@ -94,5 +96,5 @@ npm run dev
 
 ---
 
-## 📡 Diagram of Connection
+## Diagram of Connection
 `WhatsApp User` → `Meta Cloud API` → `Django API (process & save)` ← `React Frontend (display)`
