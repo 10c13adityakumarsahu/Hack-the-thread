@@ -142,4 +142,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://hack-the-thread-zm6v.onrender.com",
     "https://hack-the-thread.pages.dev"
 ]
-ALLOWED_HOSTS = ['https://hack-the-thread-zm6v.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['hack-the-thread-zm6v.onrender.com', 'localhost', '127.0.0.1']
