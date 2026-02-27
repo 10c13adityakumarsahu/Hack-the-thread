@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://hack-the-thread.onrender.com/api/',
+    baseURL: 'https://hack-the-thread-zm6v.onrender.com/api/',
 });
 
 export const getItems = () => api.get('items/');

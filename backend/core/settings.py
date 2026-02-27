@@ -139,7 +139,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Production CSRF settings
 CSRF_TRUSTED_ORIGINS = [
-    "https://hack-the-thread.onrender.com",
+    "https://hack-the-thread-zm6v.onrender.com",
     "https://hack-the-thread.pages.dev"
 ]
-ALLOWED_HOSTS = ['hack-the-thread.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['https://hack-the-thread-zm6v.onrender.com', 'localhost', '127.0.0.1']
